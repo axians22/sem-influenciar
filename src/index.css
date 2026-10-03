@@ -1,0 +1,63 @@
+@import "tailwindcss";
+
+:root{
+  color-scheme: light;
+  --surface-1:#fcfcfb; --page:#f9f9f7; --surface-2:#f4f3f0;
+  --ink-1:#0b0b0b; --ink-2:#52514e; --ink-3:#898781;
+  --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,0.10);
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300;
+  --good:#0ca30c; --warn:#fab219; --serious:#ec835a; --crit:#d03b3b;
+}
+@media (prefers-color-scheme: dark){
+  :root:where(:not([data-theme="light"])){
+    color-scheme: dark;
+    --surface-1:#1a1a19; --page:#0d0d0d; --surface-2:#232322;
+    --ink-1:#ffffff; --ink-2:#c3c2b7; --ink-3:#898781;
+    --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --surface-1:#1a1a19; --page:#0d0d0d; --surface-2:#232322;
+  --ink-1:#ffffff; --ink-2:#c3c2b7; --ink-3:#898781;
+  --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300;
+}
+
+/* os tokens viram utilitários (bg-surface-1, text-ink-2, border-line…) e trocam
+   sozinhos com o tema, sem precisar de variantes dark: */
+@theme inline {
+  --color-page: var(--page);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-ink-1: var(--ink-1);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-grid: var(--grid);
+  --color-axis: var(--axis);
+  --color-line: var(--border);
+  --color-s1: var(--s1);
+  --color-s2: var(--s2);
+  --color-s3: var(--s3);
+  --color-s4: var(--s4);
+  --color-s5: var(--s5);
+  --color-s6: var(--s6);
+  --color-good: var(--good);
+  --color-warn: var(--warn);
+  --color-serious: var(--serious);
+  --color-crit: var(--crit);
+  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+@layer base {
+  body{ background:var(--page); color:var(--ink-1); font-size:16px; line-height:1.55; }
+  a{ color:var(--s1); }
+  button{ cursor:pointer; }
+  h1,h2,h3{ line-height:1.2; }
+}
+
+@media print{
+  body{ background:#fff; color:#000; }
+  @page{ margin:14mm; }
+}

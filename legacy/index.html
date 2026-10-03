@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Comparador Eleições 2026</title>
+<meta name="description" content="Compare candidatos a presidente, governador de Goiás e Senado por Goiás nas eleições de 2026, com propostas, financiamento, pesquisas e histórico judicial — tudo com fonte.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗳️</text></svg>">
+<style>
+:root{
+  color-scheme: light;
+  --surface-1:#fcfcfb; --page:#f9f9f7; --surface-2:#f4f3f0;
+  --ink-1:#0b0b0b; --ink-2:#52514e; --ink-3:#898781;
+  --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,0.10);
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300;
+  --good:#0ca30c; --warn:#fab219; --serious:#ec835a; --crit:#d03b3b;
+  --maxw:1100px;
+}
+@media (prefers-color-scheme: dark){
+  :root:where(:not([data-theme="light"])){
+    color-scheme: dark;
+    --surface-1:#1a1a19; --page:#0d0d0d; --surface-2:#232322;
+    --ink-1:#ffffff; --ink-2:#c3c2b7; --ink-3:#898781;
+    --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --surface-1:#1a1a19; --page:#0d0d0d; --surface-2:#232322;
+  --ink-1:#ffffff; --ink-2:#c3c2b7; --ink-3:#898781;
+  --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--page); color:var(--ink-1);
+  font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:16px; line-height:1.55;
+}
+.wrap{max-width:var(--maxw); margin:0 auto; padding:0 16px}
+a{color:var(--s1)}
+h1,h2,h3{line-height:1.2; margin:0}
+h1{font-size:clamp(1.6rem,4.5vw,2.4rem); font-weight:650; letter-spacing:-.02em}
+h2{font-size:clamp(1.25rem,3vw,1.6rem); font-weight:620; letter-spacing:-.01em}
+h3{font-size:1.05rem; font-weight:620}
+
+/* header */
+header{border-bottom:1px solid var(--border); background:var(--surface-1); padding:28px 0 22px}
+.hd-top{display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap}
+.sub{color:var(--ink-2); margin-top:8px; max-width:62ch}
+.countdown{
+  display:inline-flex; align-items:baseline; gap:8px; margin-top:16px;
+  background:var(--surface-2); border:1px solid var(--border); border-radius:8px;
+  padding:10px 14px; font-variant-numeric:tabular-nums;
+}
+.countdown b{font-size:1.1rem}
+.themebtn{
+  background:var(--surface-2); color:var(--ink-2); border:1px solid var(--border);
+  border-radius:8px; padding:7px 12px; cursor:pointer; font:inherit; font-size:.85rem;
+}
+.themebtn:hover{color:var(--ink-1)}
+
+/* nav */
+nav{position:sticky; top:0; z-index:40; background:var(--surface-1);
+  border-bottom:1px solid var(--border); overflow-x:auto; -webkit-overflow-scrolling:touch}
+nav ul{display:flex; gap:4px; list-style:none; margin:0; padding:0 16px; max-width:var(--maxw);
+  margin-inline:auto; min-width:max-content}
+nav a{display:block; padding:12px 12px; color:var(--ink-2); text-decoration:none;
+  font-size:.9rem; white-space:nowrap; border-bottom:2px solid transparent}
+nav a:hover{color:var(--ink-1)}
+nav a.on{color:var(--ink-1); border-bottom-color:var(--s1)}
+
+section{padding:40px 0 8px}
+.lead{color:var(--ink-2); max-width:70ch; margin:10px 0 24px}
+
+/* cards */
+.card{background:var(--surface-1); border:1px solid var(--border); border-radius:12px;
+  padding:20px; margin-bottom:16px}
+.grid{display:grid; gap:16px}
+@media(min-width:760px){ .grid-2{grid-template-columns:1fr 1fr} }
+
+/* chart */
+.chart{background:var(--surface-1); border:1px solid var(--border); border-radius:12px;
+  padding:20px; margin-bottom:16px}
+.chart-h{margin-bottom:4px}
+.chart-s{color:var(--ink-2); font-size:.9rem; margin-bottom:16px}
+.legend{display:flex; flex-wrap:wrap; gap:6px 16px; margin-bottom:14px}
+.lg{display:inline-flex; align-items:center; gap:7px; font-size:.85rem; color:var(--ink-2)}
+.lg i{width:14px; height:3px; border-radius:2px; flex:none}
+.lg.rect i{height:11px; width:11px; border-radius:2px}
+/* só os SVG de gráfico escalam; ícones inline mantêm seu tamanho próprio */
+.chart svg, .chart-wrap svg{display:block; width:100%; height:auto; overflow:visible}
+.gl{stroke:var(--grid); stroke-width:1}
+.ax{stroke:var(--axis); stroke-width:1}
+.tk{fill:var(--ink-3); font-size:11px; font-variant-numeric:tabular-nums}
+.dl{fill:var(--ink-1); font-size:11.5px; font-weight:600; font-variant-numeric:tabular-nums}
+.bl{fill:var(--ink-2); font-size:11px}
+
+/* tooltip */
+.tip{position:fixed; z-index:90; pointer-events:none; opacity:0; transition:opacity .1s;
+  background:var(--surface-1); border:1px solid var(--border); border-radius:8px;
+  padding:9px 11px; font-size:.82rem; box-shadow:0 6px 20px rgba(0,0,0,.14); max-width:260px}
+.tip.on{opacity:1}
+.tip-h{font-weight:620; margin-bottom:5px; color:var(--ink-1)}
+.tip-r{display:flex; align-items:center; gap:7px; margin-top:3px; color:var(--ink-2)}
+.tip-r i{width:12px; height:2.5px; border-radius:2px; flex:none}
+.tip-r b{color:var(--ink-1); font-variant-numeric:tabular-nums; margin-left:auto; padding-left:10px}
+.tip-n{color:var(--ink-3); font-size:.76rem; margin-top:6px; line-height:1.4}
+
+/* tables */
+details.tbl{margin-top:14px}
+details.tbl summary{cursor:pointer; color:var(--ink-2); font-size:.85rem; padding:4px 0}
+details.tbl summary:hover{color:var(--ink-1)}
+table{border-collapse:collapse; width:100%; font-size:.84rem; margin-top:10px}
+th,td{text-align:left; padding:7px 9px; border-bottom:1px solid var(--grid); vertical-align:top}
+th{color:var(--ink-2); font-weight:600; font-size:.78rem; text-transform:uppercase; letter-spacing:.04em}
+td.n,th.n{text-align:right; font-variant-numeric:tabular-nums}
+.scroll{overflow-x:auto}
+
+/* candidate */
+.cand{background:var(--surface-1); border:1px solid var(--border); border-radius:12px;
+  margin-bottom:14px; overflow:hidden}
+.cand-h{display:flex; gap:14px; align-items:flex-start; padding:18px 20px; cursor:pointer;
+  user-select:none}
+.cand-h:hover{background:var(--surface-2)}
+.numbox{flex:none; width:46px; height:46px; border-radius:9px; background:var(--surface-2);
+  border:1px solid var(--border); display:grid; place-items:center;
+  font-weight:680; font-size:1.05rem; font-variant-numeric:tabular-nums}
+.cand-id{flex:1; min-width:0}
+.cand-n{font-weight:640; font-size:1.05rem}
+.cand-p{color:var(--ink-2); font-size:.88rem; margin-top:2px}
+.chev{flex:none; width:18px; height:18px; display:block; color:var(--ink-3);
+  transition:transform .15s; margin-top:12px}
+.cand.open .chev{transform:rotate(180deg)}
+.cand-b{display:none; padding:0 20px 20px; border-top:1px solid var(--grid)}
+.cand.open .cand-b{display:block}
+.row{display:flex; gap:10px; flex-wrap:wrap; margin:14px 0 0}
+.pill{background:var(--surface-2); border:1px solid var(--border); border-radius:999px;
+  padding:4px 11px; font-size:.78rem; color:var(--ink-2)}
+.fieldg{margin-top:18px}
+.fieldg h4{margin:0 0 8px; font-size:.78rem; text-transform:uppercase; letter-spacing:.05em;
+  color:var(--ink-3); font-weight:600}
+dl.props{margin:0; display:grid; gap:10px}
+dl.props>div{display:grid; gap:3px}
+dl.props dt{font-size:.8rem; font-weight:620; color:var(--ink-2)}
+dl.props dd{margin:0; font-size:.9rem}
+
+/* process */
+.proc{border:1px solid var(--border); border-radius:9px; padding:13px 15px; margin-bottom:10px;
+  background:var(--surface-2)}
+.proc-h{display:flex; gap:9px; align-items:center; flex-wrap:wrap; margin-bottom:7px}
+.proc-c{font-weight:620; font-size:.92rem}
+.badge{display:inline-flex; align-items:center; gap:5px; border-radius:999px;
+  padding:3px 10px; font-size:.75rem; font-weight:620; border:1px solid}
+.badge svg{width:12px; height:12px; flex:none; display:block}
+.b-ok{color:var(--good); border-color:var(--good); background:color-mix(in srgb,var(--good) 10%,transparent)}
+.b-neutral{color:var(--ink-2); border-color:var(--axis); background:transparent}
+.b-warn{color:var(--serious); border-color:var(--serious); background:color-mix(in srgb,var(--serious) 10%,transparent)}
+.b-crit{color:var(--crit); border-color:var(--crit); background:color-mix(in srgb,var(--crit) 10%,transparent)}
+.proc-d{font-size:.87rem; color:var(--ink-2)}
+.proc-f{margin-top:8px; font-size:.8rem}
+.none{color:var(--ink-2); font-size:.88rem; font-style:italic}
+
+/* notes */
+.note{border-left:3px solid var(--s4); background:var(--surface-2); padding:12px 15px;
+  border-radius:0 8px 8px 0; font-size:.87rem; color:var(--ink-2); margin:14px 0}
+.note.crit{border-left-color:var(--crit)}
+.note b{color:var(--ink-1)}
+.kpis{display:grid; gap:12px; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); margin-bottom:20px}
+.kpi{background:var(--surface-1); border:1px solid var(--border); border-radius:10px; padding:14px 16px}
+.kpi .k{font-size:.78rem; color:var(--ink-2); margin-bottom:4px}
+.kpi .v{font-size:1.5rem; font-weight:650; letter-spacing:-.02em}
+.kpi .d{font-size:.78rem; color:var(--ink-3); margin-top:2px}
+.filtro{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:0 0 16px}
+.fbtn{background:var(--surface-2); color:var(--ink-2); border:1.5px solid var(--border);
+  border-radius:999px; padding:7px 14px; font:inherit; font-size:.84rem; cursor:pointer}
+.fbtn:hover{color:var(--ink-1)}
+.fbtn.on{background:var(--s1); border-color:var(--s1); color:#fff; font-weight:600}
+.fnota{font-size:.78rem; color:var(--ink-3)}
+
+/* mais bem colocados */
+.top-c{background:var(--surface-1); border:1px solid var(--border); border-radius:12px;
+  padding:20px; margin-bottom:16px}
+.top-h{display:flex; justify-content:space-between; align-items:baseline; gap:12px;
+  flex-wrap:wrap; margin-bottom:3px}
+.top-meta{font-size:.8rem; color:var(--ink-2)}
+.top-row{display:flex; align-items:center; gap:13px; padding:11px 0;
+  border-bottom:1px solid var(--grid)}
+.top-row:last-child{border-bottom:none}
+.top-pos{flex:none; width:26px; height:26px; border-radius:50%; display:grid;
+  place-items:center; font-size:.8rem; font-weight:680; background:var(--surface-2);
+  border:1px solid var(--border); color:var(--ink-2)}
+.top-nm{flex:1; min-width:0}
+.top-nm .n1{font-weight:580; font-size:.95rem}
+.top-nm .n2{font-size:.78rem; color:var(--ink-3)}
+.top-bar{flex:1.4; min-width:70px; height:9px; background:var(--surface-2);
+  border-radius:5px; overflow:hidden}
+.top-bar i{display:block; height:100%; border-radius:5px}
+.top-v{flex:none; font-size:.92rem; font-weight:680; font-variant-numeric:tabular-nums;
+  min-width:52px; text-align:right}
+.emp{display:inline-block; font-size:.68rem; padding:1px 7px; border-radius:999px;
+  border:1px dashed var(--serious); color:var(--serious); margin-left:7px}
+.top-vagas{font-size:.82rem; color:var(--ink-2); background:var(--surface-2);
+  border-radius:8px; padding:9px 12px; margin-top:12px}
+
+/* colinha */
+.col-wrap{background:var(--surface-1); border:1px solid var(--border); border-radius:12px;
+  padding:20px; margin-bottom:16px}
+.col-cargo{padding:16px 0; border-bottom:1px solid var(--grid)}
+.col-cargo:last-child{border-bottom:none}
+.col-h{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin-bottom:10px}
+.col-ord{flex:none; width:22px; height:22px; border-radius:50%; background:var(--surface-2);
+  border:1px solid var(--border); display:grid; place-items:center; font-size:.72rem;
+  font-weight:680; color:var(--ink-2)}
+.col-rot{font-weight:620; font-size:.98rem}
+.col-dig{font-size:.76rem; color:var(--ink-3)}
+.col-dica{font-size:.82rem; color:var(--ink-2); margin:0 0 10px}
+.col-opts{display:flex; flex-wrap:wrap; gap:7px}
+.col-opt{display:inline-flex; align-items:center; gap:8px; background:var(--surface-2);
+  border:1.5px solid var(--border); border-radius:8px; padding:7px 11px; cursor:pointer;
+  font-size:.85rem; transition:border-color .12s}
+.col-opt:hover{border-color:var(--ink-3)}
+.col-opt.sel{border-color:var(--s1); background:color-mix(in srgb,var(--s1) 10%,transparent)}
+.col-opt b{font-variant-numeric:tabular-nums; font-weight:680}
+.col-opt input{accent-color:var(--s1); margin:0}
+.col-livre{display:flex; align-items:center; gap:8px; margin-top:10px; flex-wrap:wrap}
+.col-livre input[type=text]{background:var(--surface-2); border:1.5px solid var(--border);
+  border-radius:8px; padding:8px 11px; font:inherit; font-size:.88rem; color:var(--ink-1);
+  width:120px; font-variant-numeric:tabular-nums; letter-spacing:.06em}
+.col-livre input[type=text]:focus{outline:none; border-color:var(--s1)}
+.col-acoes{display:flex; gap:10px; flex-wrap:wrap; margin-top:18px}
+.btn{background:var(--s1); color:#fff; border:none; border-radius:8px; padding:11px 18px;
+  font:inherit; font-size:.9rem; font-weight:620; cursor:pointer}
+.btn:hover{filter:brightness(1.08)}
+.btn-2{background:var(--surface-2); color:var(--ink-1); border:1px solid var(--border)}
+
+/* a colinha pronta */
+.cola{background:var(--surface-1); border:2px solid var(--ink-1); border-radius:12px;
+  padding:22px; margin-top:20px}
+.cola-h{text-align:center; border-bottom:2px solid var(--ink-1); padding-bottom:12px;
+  margin-bottom:4px}
+.cola-t{font-size:1.2rem; font-weight:680; letter-spacing:-.01em}
+.cola-s{font-size:.8rem; color:var(--ink-2); margin-top:3px}
+.cola-item{display:flex; align-items:center; gap:14px; padding:13px 0;
+  border-bottom:1px dashed var(--axis)}
+.cola-item:last-child{border-bottom:none}
+.cola-cargo{flex:1; min-width:0}
+.cola-cargo .c1{font-size:.74rem; text-transform:uppercase; letter-spacing:.05em;
+  color:var(--ink-3); font-weight:600}
+.cola-cargo .c2{font-size:.95rem; font-weight:560; margin-top:2px}
+.cola-num{flex:none; font-size:1.7rem; font-weight:700; letter-spacing:.06em;
+  font-variant-numeric:tabular-nums; padding:4px 14px; border:2px solid var(--ink-1);
+  border-radius:8px; min-width:92px; text-align:center}
+.cola-vazio{color:var(--ink-3); font-style:italic; font-size:.88rem}
+.cola-rod{margin-top:16px; padding-top:12px; border-top:1px solid var(--grid);
+  font-size:.74rem; color:var(--ink-3); text-align:center; line-height:1.5}
+
+/* doadores */
+.don{background:var(--surface-1); border:1px solid var(--border); border-radius:12px;
+  padding:20px; margin-bottom:16px}
+.don-h{display:flex; justify-content:space-between; align-items:baseline; gap:12px;
+  flex-wrap:wrap; margin-bottom:4px}
+.don-tot{color:var(--ink-2); font-size:.85rem; font-variant-numeric:tabular-nums}
+.don-cols{display:grid; gap:22px; margin-top:16px}
+@media(min-width:720px){ .don-cols{grid-template-columns:1fr 1fr} }
+.don-col h4{margin:0 0 10px; font-size:.78rem; text-transform:uppercase;
+  letter-spacing:.05em; color:var(--ink-3); font-weight:600}
+.don-row{display:grid; gap:4px; padding:9px 0; border-bottom:1px solid var(--grid)}
+.don-r1{display:flex; justify-content:space-between; gap:10px; align-items:baseline}
+.don-nm{font-size:.88rem; font-weight:500}
+.don-v{font-size:.85rem; font-weight:620; font-variant-numeric:tabular-nums;
+  white-space:nowrap}
+.don-doc{font-size:.74rem; color:var(--ink-3); font-variant-numeric:tabular-nums}
+.don-bar{height:4px; border-radius:2px; background:var(--surface-2); overflow:hidden;
+  margin-top:3px}
+.don-bar i{display:block; height:100%; border-radius:2px}
+.tag{display:inline-block; font-size:.68rem; padding:1px 6px; border-radius:999px;
+  border:1px solid var(--border); color:var(--ink-3); margin-left:6px;
+  vertical-align:middle}
+.cruz{border-left:3px solid var(--s2); background:var(--surface-2); padding:14px 16px;
+  border-radius:0 8px 8px 0; margin-bottom:12px}
+.cruz-n{font-weight:620; font-size:.95rem}
+.cruz-l{display:flex; gap:16px; flex-wrap:wrap; margin-top:8px; font-size:.85rem}
+.cruz-i{color:var(--ink-2)}
+.cruz-i b{color:var(--ink-1); font-variant-numeric:tabular-nums}
+footer{border-top:1px solid var(--border); background:var(--surface-1); margin-top:48px;
+  padding:28px 0; color:var(--ink-2); font-size:.85rem}
+footer a{color:var(--s1)}
+.srcs{display:grid; gap:5px; margin-top:12px; font-size:.82rem}
+@media print{
+  /* imprime apenas a colinha pronta */
+  body{background:#fff; color:#000}
+  header,nav,footer,section,.themebtn,.tip,#colinha-form{display:none!important}
+  #colinha{display:block!important; padding:0}
+  #colinha>h2,#colinha>.lead{display:none!important}
+  #colinha-saida{display:block!important}
+  .cola{border:2px solid #000; box-shadow:none; margin:0; padding:16px;
+    page-break-inside:avoid; max-width:100%}
+  .cola-h{border-bottom-color:#000}
+  .cola-num{border-color:#000; color:#000}
+  .cola-item{border-bottom-color:#999}
+  .cola-t,.cola-cargo .c2{color:#000}
+  @page{margin:14mm}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="hd-top">
+      <div>
+        <h1>Comparador Eleições 2026</h1>
+        <p class="sub">Presidente da República, governo de Goiás e Senado por Goiás: propostas,
+        financiamento de campanha, pesquisas e histórico judicial de cada candidatura — com a
+        fonte de cada informação.</p>
+      </div>
+      <button class="themebtn" id="theme" aria-label="Alternar tema">Tema</button>
+    </div>
+    <div class="countdown" id="cd"></div>
+  </div>
+</header>
+
+<nav>
+  <ul>
+    <li><a href="#colinha" class="on">Minha colinha</a></li>
+    <li><a href="#pesquisas">Pesquisas</a></li>
+    <li><a href="#topcinco">Mais bem colocados</a></li>
+    <li><a href="#presidente">Presidente</a></li>
+    <li><a href="#goias">Goiás</a></li>
+    <li><a href="#partidos">Partidos</a></li>
+    <li><a href="#dinheiro">Financiamento</a></li>
+    <li><a href="#doadores">Quem financiou</a></li>
+    <li><a href="#metodo">Método e fontes</a></li>
+  </ul>
+</nav>
+
+<div class="wrap">
+
+<section id="colinha">
+  <h2>Monte sua colinha de voto</h2>
+  <p class="lead">Escolha seus candidatos abaixo e leve a lista pronta para a urna —
+  imprima ou abra no celular. A ordem segue exatamente a da urna eletrônica, conforme
+  o TSE. Sua escolha fica salva neste navegador e não é enviada a lugar nenhum.</p>
+  <div id="colinha-form"></div>
+  <div id="colinha-saida"></div>
+</section>
+
+<section id="pesquisas">
+  <h2>Pesquisas de intenção de voto</h2>
+  <p class="lead">Pesquisa não é previsão: mede intenção no momento da coleta e tem margem de
+  erro. Quando a diferença entre dois candidatos é menor que a soma das margens, há empate
+  técnico — os números não permitem dizer quem está na frente.</p>
+  <div class="kpis" id="kpis"></div>
+  <div id="ch-pres"></div>
+  <div id="ch-datafolha"></div>
+  <div id="ch-2turno"></div>
+  <div id="ch-rejeicao"></div>
+  <div id="validos-tbl"></div>
+</section>
+
+<section id="topcinco">
+  <h2>Os mais bem colocados nas pesquisas</h2>
+  <p class="lead">Os cinco primeiros de cada cargo na pesquisa mais recente, com a margem
+  de erro e os empates técnicos marcados. <b>Isto não é previsão de resultado</b> —
+  pesquisa mede intenção de voto no momento da coleta.</p>
+  <div id="top-lista"></div>
+</section>
+
+<section id="presidente">
+  <h2>Candidatos à Presidência</h2>
+  <p class="lead">As 13 chapas na disputa, pela ordem na pesquisa mais recente. Clique para abrir
+  propostas por tema, financiamento e histórico judicial. Os dados cadastrais vêm do arquivo
+  oficial de candidaturas do TSE.</p>
+  <div id="filtro-pres" class="filtro"></div>
+  <div id="list-pres"></div>
+</section>
+
+<section id="goias">
+  <h2>Goiás</h2>
+  <p class="lead">Goiás tem uma particularidade em 2026: Ronaldo Caiado renunciou ao governo em
+  31 de março para disputar a Presidência, e seu vice, Daniel Vilela, assumiu e concorre à
+  reeleição. O estado elege <b>dois senadores</b>, então cada eleitor vota em dois nomes.</p>
+  <div id="ch-gov-go"></div>
+  <h3 style="margin:34px 0 0">Governo de Goiás · 6 candidatos</h3>
+  <div id="filtro-gov" class="filtro"></div>
+  <div id="list-gov" style="margin-top:14px"></div>
+  <div id="ch-sen-go" style="margin-top:34px"></div>
+  <h3 style="margin:34px 0 0">Senado por Goiás · 11 candidatos para 2 vagas</h3>
+  <div id="filtro-sen" class="filtro"></div>
+  <div id="list-sen" style="margin-top:14px"></div>
+</section>
+
+<section id="partidos">
+  <h2>Os partidos</h2>
+  <p class="lead">Tamanho de cada bancada hoje, antes da apuração. Uma federação partidária
+  obriga os partidos que a integram a atuar unidos por no mínimo quatro anos, como se fossem
+  um só partido.</p>
+  <div id="ch-camara"></div>
+  <div class="grid grid-2">
+    <div id="ch-senado"></div>
+    <div id="ch-govs"></div>
+  </div>
+  <div id="federacoes"></div>
+</section>
+
+<section id="dinheiro">
+  <h2>Financiamento de campanha</h2>
+  <div id="ch-fin"></div>
+</section>
+
+<section id="doadores">
+  <h2>Quem financiou as campanhas</h2>
+  <p class="lead">Doadores declarados ao TSE, com CPF ou CNPJ. Vale distinguir duas coisas
+  que costumam ser confundidas: <b>doador</b> é quem colocou dinheiro na campanha;
+  <b>fornecedor</b> é quem recebeu dinheiro dela. Os valores são parciais — a prestação
+  de contas final ocorre depois da eleição.</p>
+  <div id="doad-cruzados"></div>
+  <div id="doad-lista"></div>
+</section>
+
+<section id="metodo">
+  <h2>Método e fontes</h2>
+  <div class="card">
+    <h3>Como este site foi feito</h3>
+    <p style="color:var(--ink-2); font-size:.92rem">Os dados foram coletados em 3 de outubro de
+    2026 a partir de fontes primárias sempre que possível: o arquivo oficial de candidaturas do
+    TSE, as páginas da Câmara dos Deputados e do Senado Federal, os relatórios publicados pelos
+    próprios institutos de pesquisa e decisões do STF. Onde a fonte primária não era acessível,
+    usamos veículos de grande circulação, sempre identificados.</p>
+
+    <h3 style="margin-top:22px">Sobre o histórico judicial</h3>
+    <p style="color:var(--ink-2); font-size:.92rem">Cada caso traz o estágio processual exato,
+    porque a diferença entre eles é decisiva. Uma investigação não é acusação; uma acusação não
+    é condenação; e uma condenação anulada não é condenação. Processos arquivados, anulados e
+    absolvições aparecem marcados como tais, com o mesmo destaque das condenações. Rumores e
+    acusações sem fonte verificável foram deixados de fora.</p>
+    <div id="legenda" style="margin-top:14px"></div>
+
+    <h3 style="margin-top:22px">Limitações que você deve conhecer</h3>
+    <div class="note crit" id="limites"></div>
+    <div class="srcs" id="fontes-geral"></div>
+  </div>
+</section>
+
+</div>
+
+<footer>
+  <div class="wrap">
+    <p><b>Este site não é oficial</b> e não tem vínculo com o TSE, com partidos ou com
+    candidaturas. Em caso de divergência, vale sempre a informação oficial do Tribunal Superior
+    Eleitoral.</p>
+    <p style="margin-top:10px">Dados coletados em 3 de outubro de 2026. Informação oficial sobre
+    candidaturas, locais de votação e resultados:
+    <a href="https://www.tse.jus.br" target="_blank" rel="noopener">tse.jus.br</a>.</p>
+  </div>
+</footer>
+
+<div class="tip" id="tip" role="status" aria-live="polite"></div>
+
+<script src="assets/dados.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
