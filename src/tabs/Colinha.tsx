@@ -222,7 +222,8 @@ function CampoBusca({ cargo, nr, of, lista, onChange }:
 function Cola({ esc, of, uf, cargos }: { esc: Escolhas; of: Oficial; uf: Uf; cargos: CargoUrna[] }){
   const n = cargos.filter(c => esc[c.id]).length;
   return (
-    <div className="rounded-xl border-2 border-ink-1 bg-surface-1 p-4 print:break-inside-avoid print:border-black print:bg-white print:text-black">
+    /* impressa, a colinha sai do tamanho de um cartão (cerca de 5,5 cm de largura), para caber na carteira */
+    <div className="rounded-xl border-2 border-ink-1 bg-surface-1 p-4 print:w-[340px] print:[zoom:0.6] print:break-inside-avoid print:border-black print:bg-white print:text-black">
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="text-[1.05rem] font-bold uppercase tracking-wide">Colinha eleitoral</div>

@@ -94,17 +94,35 @@ export const proposicoes = (id: number) =>
   get<Proposicao[]>(`/proposicoes?idDeputadoAutor=${id}&siglaTipo=PL&siglaTipo=PLP&siglaTipo=PEC&ordem=DESC&ordenarPor=id&itens=15`);
 
 /* Deputados federais em exercício do estado e quantos projetos (PL, PLP e PEC) cada um
-   assinou, como autor ou coautor, nesta legislatura. O nome civil serve para casar com
-   o registro de candidatura do TSE. É uma contagem: não mede qualidade nem resultado. */
-export interface Atuacao { id: number; nomeCivil: string; projetos: number }
+   assinou, como autor ou coautor, nesta legislatura. É uma contagem: não mede qualidade
+   nem resultado. O detalhe do deputado (nome civil) não aceita chamada do navegador,
+   então o casamento com a candidatura é feito pelo nome parlamentar: ver `mesmoNome`. */
+export interface Atuacao { id: number; nome: string; projetos: number }
 const LEGISLATURA = '2023-02-01';
 export async function atuacaoBancada(uf: string): Promise<Atuacao[]> {
   const deps = await bancada(uf);
   return Promise.all(deps.map(async d => {
-    const [det, prop] = await Promise.all([
-      get<{ nomeCivil: string }>(`/deputados/${d.id}`),
-      get<unknown[]>(`/proposicoes?idDeputadoAutor=${d.id}&siglaTipo=PL&siglaTipo=PLP&siglaTipo=PEC&dataApresentacaoInicio=${LEGISLATURA}&itens=1`),
-    ]);
-    return { id: d.id, nomeCivil: det.dados.nomeCivil, projetos: prop.total ?? 0 };
+    const prop = await get<unknown[]>(`/proposicoes?idDeputadoAutor=${d.id}&siglaTipo=PL&siglaTipo=PLP&siglaTipo=PEC&dataApresentacaoInicio=${LEGISLATURA}&itens=1`);
+    return { id: d.id, nome: d.nome, projetos: prop.total ?? 0 };
   }));
+}
+
+/* Acha a candidatura de um deputado pelo nome parlamentar, da pista mais forte para a
+   mais fraca: nome de urna igual; palavras de um contidas no outro; palavras contidas no
+   nome completo. Se uma pista aponta para mais de uma candidatura, não escolhe nenhuma. */
+const palavras = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+  .split(/[^a-z0-9]+/).filter(w => w.length > 2);
+const dentro = (a: string[], b: string[]) => a.length >= 2 && a.every(w => b.includes(w));
+export function candidaturaDe<T extends { urna: string; nome: string }>(parlamentar: string, lista: T[]): T | null {
+  const c = palavras(parlamentar);
+  const pistas: ((x: T) => boolean)[] = [
+    x => palavras(x.urna).join(' ') === c.join(' '),
+    x => { const u = palavras(x.urna); return dentro(c, u) || dentro(u, c); },
+    x => dentro(c, palavras(x.nome)),
+  ];
+  for (const pista of pistas) {
+    const achados = lista.filter(pista);
+    if (achados.length) return achados.length === 1 ? achados[0] : null;
+  }
+  return null;
 }

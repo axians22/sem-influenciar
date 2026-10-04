@@ -6,7 +6,7 @@ import { PESQ_GOV_GOIAS, PESQ_SEN_GOIAS, TOP_PESQUISAS } from '../data/pesquisas
 import { useTse, type CargoTse } from '../lib/tse';
 import { rotuloCargo, useUf, type Uf } from '../lib/uf';
 import { norm, titulo } from '../lib/format';
-import { atuacaoBancada } from '../lib/camara';
+import { atuacaoBancada, candidaturaDe, type Atuacao } from '../lib/camara';
 import { ListaCandidatos } from '../components/Candidatos';
 import { FichaDeputado, useDeputados, type Deputado } from '../components/FichaDeputado';
 import { PesquisasEstado } from '../components/PesquisasEstado';
@@ -38,16 +38,15 @@ function ListaOficial({ cargo, uf }: { cargo: Cargo; uf: Uf }){
   const rotulo = rotuloCargo(cargo, uf);
   /* filtro "já é deputado federal": número de projetos por nome civil, vindo da Câmara */
   const [mandato, setMandato] = useState(false);
-  const [atuacao, setAtuacao] = useState<Map<string, number> | 'erro' | null>(null);
+  const [atuacao, setAtuacao] = useState<Atuacao[] | 'erro' | null>(null);
   useEffect(() => { setMandato(false); setAtuacao(null); }, [uf.sigla, cargo]);
   useEffect(() => {
     if (!mandato || atuacao) return;
     let vivo = true;
-    atuacaoBancada(uf.sigla).then(a => { if (vivo) setAtuacao(new Map(a.map(x => [norm(x.nomeCivil), x.projetos]))); },
+    atuacaoBancada(uf.sigla).then(a => { if (vivo) setAtuacao(a); },
       () => { if (vivo) setAtuacao('erro'); });
     return () => { vivo = false; };
   }, [mandato, atuacao, uf.sigla]);
-  const projetos = atuacao instanceof Map ? atuacao : null;
 
   /* com a totalização do TSE em mãos, vale a lista dela: sem números repetidos nem
      candidaturas que saíram da disputa. Sem rede, cai no arquivo de fichas. */
@@ -55,6 +54,14 @@ function ListaOficial({ cargo, uf }: { cargo: Cargo; uf: Uf }){
     ? tse.cands.map(x => ({ nr: x.n, sq: x.sq as string | null, urna: titulo(x.urna), partido: x.partido, nome: x.nome }))
     : (arquivo?.lista || []).filter(x => x.naUrna).map(x => ({ nr: x.nr, sq: x.sq as string | null, urna: x.urna, partido: x.partido, nome: x.nome }))
   ).sort((a, b) => a.urna.localeCompare(b.urna, 'pt-BR')), [tse, arquivo]);
+
+  /* número de urna -> projetos apresentados, para quem hoje é deputado federal */
+  const projetos = useMemo(() => {
+    if (!Array.isArray(atuacao)) return null;
+    const m = new Map<string, number>();
+    atuacao.forEach(a => { const x = candidaturaDe(a.nome, lista); if (x) m.set(x.nr, a.projetos); });
+    return m;
+  }, [atuacao, lista]);
 
   const partidos = useMemo(() => {
     const m = new Map<string, number>();
@@ -68,8 +75,7 @@ function ListaOficial({ cargo, uf }: { cargo: Cargo; uf: Uf }){
       && (!nq || norm(x.urna + ' ' + x.partido + ' ' + x.nr).includes(nq)));
     if (!mandato) return f;
     if (!projetos) return [];
-    const n = (x: { nome: string }) => projetos.get(norm(x.nome));
-    return f.filter(x => n(x) != null).sort((a, b) => n(b)! - n(a)!);
+    return f.filter(x => projetos.has(x.nr)).sort((a, b) => projetos.get(b.nr)! - projetos.get(a.nr)!);
   }, [lista, q, partido, mandato, projetos]);
   const vis = todos || q || partido || mandato ? filtrados : filtrados.slice(0, LIMITE);
 
@@ -147,7 +153,7 @@ function ListaOficial({ cargo, uf }: { cargo: Cargo; uf: Uf }){
               <b className="w-[52px] flex-none text-[.92rem] tabular-nums">{x.nr}</b>
               <span className="min-w-0 flex-1 text-[.9rem] text-s1 underline-offset-2 hover:underline">{x.urna}</span>
               <span className="flex-none text-[.78rem] text-ink-3">{x.partido}</span>
-              {mandato && projetos && <b className="w-[78px] flex-none text-right text-[.8rem] tabular-nums">{projetos.get(norm(x.nome))} projetos</b>}
+              {mandato && projetos && <b className="flex-none whitespace-nowrap text-[.82rem] tabular-nums">{projetos.get(x.nr)} <span className="font-normal text-ink-3">projetos</span></b>}
             </button>
           ))}
         </div>
