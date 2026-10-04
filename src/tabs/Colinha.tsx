@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { DEPEST_GO, ORDEM_URNA, URNA } from '../data/urna';
 import type { CandUrna, CargoUrna } from '../data/types';
 import { buscaTse, type CargoTse, type TseCand } from '../lib/tse';
-import { titulo } from '../lib/format';
+import { norm, titulo } from '../lib/format';
 import { rotuloCargo, useUf, type Uf } from '../lib/uf';
 import { Note, PageHead, Tag } from '../components/ui';
 import { TiposDeVoto } from '../components/TiposDeVoto';
@@ -104,36 +104,111 @@ function Retorno({ nr, conf }: { nr: string; conf: Conf }){
   return <span className="text-[.78rem] text-ink-3">não encontrado no registro do TSE</span>;
 }
 
-/* campo de busca, para cargos com muitos candidatos */
+/* Busca com rosto, para cargos com muitos candidatos (deputados).
+   Sem escolha: campo de busca com lista de resultados (foto, número, nome, partido).
+   Com escolha: cartão do candidato com botão para remover. */
+const MAX_RESULTADOS = 40;
 function CampoBusca({ cargo, nr, of, lista, onChange }:
   { cargo: CargoUrna; nr?: string; of: Oficial; lista: CandUrna[]; onChange: (nr: string | null) => void }){
   const mapa = of[CARGO_TSE[cargo.id]];
   /* com a lista oficial em mãos, só ela é oferecida: sem números duplicados
      nem candidaturas que saíram da disputa */
-  const opcoes = useMemo(() => mapa
-    ? [...mapa.values()].sort((a, b) => a.urna.localeCompare(b.urna, 'pt-BR'))
-        .map(c => c.n + ' · ' + titulo(c.urna) + ' (' + c.partido + ')')
-    : lista.map(c => c.nr + ' · ' + c.urna + ' (' + c.partido + ')'), [mapa, lista]);
-  const [txt, setTxt] = useState(nr || '');
-  useEffect(() => { if (!nr) setTxt(''); }, [nr]);
+  const opcoes = useMemo(() => (mapa
+    ? [...mapa.values()].map(c => ({ nr: c.n, urna: titulo(c.urna), partido: c.partido, foto: c.foto as string | undefined }))
+    : lista.map(c => ({ nr: c.nr, urna: c.urna, partido: c.partido, foto: undefined as string | undefined }))
+  ).sort((a, b) => a.urna.localeCompare(b.urna, 'pt-BR')).map(c => ({ ...c, chave: norm(c.urna + ' ' + c.partido) })), [mapa, lista]);
+  const [q, setQ] = useState('');
+  const [aberto, setAberto] = useState(false);
+  const [ativo, setAtivo] = useState(0);
+  const id = 'busca-' + cargo.id;
 
-  const digita = (v: string) => {
-    setTxt(v);
-    const m = (v.match(/\d+/) || [])[0] || '';
-    const existe = m && (mapa ? mapa.has(m) : lista.some(c => c.nr === m));
-    /* número completo e fora de todas as listas também é guardado, para o aviso aparecer */
-    onChange(existe || m.length === cargo.digitos ? m : null);
+  const nq = norm(q.trim());
+  const digitos = q.replace(/\D/g, '');
+  const achados = useMemo(() => !nq ? opcoes
+    : /^\d+$/.test(nq) ? opcoes.filter(c => c.nr.startsWith(nq))
+    : opcoes.filter(c => c.chave.includes(nq)), [opcoes, nq]);
+  const vis = achados.slice(0, MAX_RESULTADOS);
+  /* número completo que não está na lista: dá para anotar mesmo assim, com aviso */
+  const avulso = digitos.length === cargo.digitos && !opcoes.some(c => c.nr === digitos) ? digitos : null;
+
+  const escolhe = (n: string) => { onChange(n); setQ(''); setAberto(false); };
+  const tecla = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowDown') { e.preventDefault(); setAberto(true); setAtivo(a => Math.min(a + 1, vis.length - 1)); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setAtivo(a => Math.max(a - 1, 0)); }
+    else if (e.key === 'Enter') { e.preventDefault(); if (vis[ativo]) escolhe(vis[ativo].nr); else if (avulso) escolhe(avulso); }
+    else if (e.key === 'Escape') setAberto(false);
   };
+
+  /* ---- já escolhido: cartão com foto e botão de remover ---- */
+  if (nr) {
+    const conf = confere(cargo.id, nr, of, lista);
+    const o = mapa?.get(nr);
+    const nome = conf.tipo === 'oficial' || conf.tipo === 'local' ? conf.nome
+      : conf.tipo === 'ambiguo' ? conf.nomes.join(' ou ') : conf.tipo === 'fora' && conf.nome ? conf.nome : 'Número ' + nr;
+    const ok = conf.tipo === 'oficial' || conf.tipo === 'local';
+    return (
+      <div className="mt-2.5">
+        <div className={'flex items-center gap-3 rounded-lg border-[1.5px] p-2 sm:max-w-[30rem] ' + (ok ? 'border-s1 bg-s1/10' : 'border-crit bg-crit/10')}>
+          <Foto redonda src={o?.foto} nome={nome} />
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-[.95rem] font-semibold">{nome}</div>
+            <div className="text-[.82rem] text-ink-2">
+              <b className="tabular-nums text-ink-1">{nr}</b>{ok && 'partido' in conf ? ' · ' + conf.partido : ''}
+            </div>
+          </div>
+          <button type="button" onClick={() => onChange(null)} aria-label={'Remover ' + nome + ' de ' + cargo.rotulo}
+            className="flex-none rounded-lg border border-line bg-surface-1 px-3 py-1.5 text-[.82rem] font-semibold text-ink-2 hover:border-crit hover:text-crit">
+            ✕ Remover
+          </button>
+        </div>
+        <div className="mt-1.5"><Retorno nr={nr} conf={conf} /></div>
+      </div>
+    );
+  }
+
+  /* ---- sem escolha: busca ---- */
   return (
-    <div className="mt-2.5 flex flex-wrap items-center gap-2">
-      <input type="text" value={txt} onChange={e => digita(e.target.value)}
-        list={'dl-' + cargo.id} placeholder="nome ou número"
-        aria-label={'Buscar candidato a ' + cargo.rotulo}
-        className="w-full rounded-lg border-[1.5px] border-line bg-surface-2 px-3 py-2 text-[.88rem] tabular-nums outline-none focus:border-s1 sm:w-80" />
-      <datalist id={'dl-' + cargo.id}>{opcoes.map(o => <option key={o} value={o} />)}</datalist>
-      {nr && mapa?.get(nr) && <Foto src={mapa.get(nr)!.foto} nome={titulo(mapa.get(nr)!.urna)} />}
-      {nr ? <Retorno nr={nr} conf={confere(cargo.id, nr, of, lista)} />
-        : txt.trim() ? <span className="text-[.78rem] text-ink-3">não encontrado no registro do TSE</span> : null}
+    <div className="relative mt-2.5 sm:max-w-[30rem]"
+      onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setAberto(false); }}>
+      <div className="relative">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true"
+          className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-3"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+        <input type="text" role="combobox" aria-expanded={aberto} aria-controls={id} aria-autocomplete="list"
+          aria-activedescendant={aberto && vis[ativo] ? id + '-' + vis[ativo].nr : undefined}
+          aria-label={'Buscar candidato a ' + cargo.rotulo}
+          value={q} onChange={e => { setQ(e.target.value); setAberto(true); setAtivo(0); }}
+          onFocus={() => setAberto(true)} onKeyDown={tecla} autoComplete="off"
+          placeholder={`Buscar entre ${opcoes.length} candidatos por nome, partido ou número`}
+          className="w-full rounded-lg border-[1.5px] border-line bg-surface-2 py-2.5 pr-3 pl-9 text-[.9rem] outline-none focus:border-s1" />
+      </div>
+      {aberto && (
+        <ul id={id} role="listbox" aria-label={'Candidatos a ' + cargo.rotulo}
+          className="absolute z-30 mt-1 max-h-[340px] w-full overflow-y-auto rounded-lg border border-line bg-surface-1 p-1 shadow-xl">
+          {vis.map((c, i) => (
+            <li key={c.nr + c.urna} id={id + '-' + c.nr} role="option" aria-selected={i === ativo}
+              ref={el => { if (el && i === ativo) el.scrollIntoView({ block: 'nearest' }); }}
+              onMouseDown={e => e.preventDefault()} onClick={() => escolhe(c.nr)} onMouseEnter={() => setAtivo(i)}
+              className={'flex cursor-pointer items-center gap-3 rounded-md px-2 py-1.5 ' + (i === ativo ? 'bg-surface-2' : '')}>
+              <Foto src={c.foto} nome={c.urna} />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[.9rem] font-medium">{c.urna}</span>
+                <span className="block text-[.78rem] text-ink-3">{c.partido}</span>
+              </span>
+              <b className="flex-none text-[.95rem] tabular-nums">{c.nr}</b>
+            </li>
+          ))}
+          {achados.length > vis.length && (
+            <li className="px-2 py-2 text-[.78rem] text-ink-3">Mostrando {vis.length} de {achados.length}. Digite mais para afinar a busca.</li>
+          )}
+          {!vis.length && !avulso && <li className="px-2 py-3 text-[.85rem] text-ink-2">Nenhum candidato encontrado para “{q}”.</li>}
+          {avulso && (
+            <li role="option" aria-selected={false} onMouseDown={e => e.preventDefault()} onClick={() => escolhe(avulso)}
+              className="cursor-pointer rounded-md px-2 py-2 text-[.85rem] text-ink-2 hover:bg-surface-2">
+              O número <b className="tabular-nums text-ink-1">{avulso}</b> não está na lista do TSE. Anotar mesmo assim
+            </li>
+          )}
+        </ul>
+      )}
     </div>
   );
 }

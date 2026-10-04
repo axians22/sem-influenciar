@@ -27,11 +27,12 @@ function Contagem({ irApuracao }: { irApuracao: () => void }){
   const abre = Date.parse('2026-10-04T08:00:00-03:00'), fecha = Date.parse('2026-10-04T17:00:00-03:00');
   const diff = abre - agora;
   return (
-    <div className="mt-4 inline-flex flex-wrap items-baseline gap-x-2 rounded-lg border border-line bg-surface-2 px-3.5 py-2.5 tabular-nums">
+    <div className="mt-5 inline-flex flex-wrap items-center gap-x-2.5 gap-y-1 rounded-xl border border-line bg-surface-2 px-4 py-3 tabular-nums">
+      <span aria-hidden="true" className="size-2 flex-none animate-pulse rounded-full bg-s1" />
       {diff > 0 ? <>
-        <span>Primeiro turno em</span>
-        <b className="text-[1.1rem]">{Math.floor(diff / 3.6e6)}h {String(Math.floor(diff / 6e4) % 60).padStart(2, '0')}min</b>
-        <span>· domingo, 4 de outubro, 8h às 17h</span>
+        <span className="text-ink-2">Primeiro turno em</span>
+        <b className="text-[1.35rem] leading-none">{Math.floor(diff / 3.6e6)}h {String(Math.floor(diff / 6e4) % 60).padStart(2, '0')}min</b>
+        <span className="text-ink-2">· domingo, 4 de outubro, das 8h às 17h</span>
       </> : agora < fecha ? <span>Votação do 1º turno em andamento, até as 17h · 2º turno em 25 de outubro</span>
         : <span>Votação do 1º turno encerrada ·{' '}
             <button type="button" onClick={irApuracao} className="text-s1 underline">acompanhe a apuração</button>
@@ -54,8 +55,17 @@ export default function App(){
         <div className="mx-auto max-w-[1320px] px-4">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <h1 className="text-[clamp(1.6rem,4.5vw,2.4rem)] font-semibold tracking-tight">Comparador Eleições 2026</h1>
-              <p className="mt-2 max-w-[62ch] text-ink-2">
+              <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                <span aria-hidden="true" className="grid size-9 flex-none place-items-center rounded-lg bg-s1 text-white">
+                  <svg viewBox="0 0 48 48" className="size-6" fill="none" stroke="currentColor" strokeWidth={3}
+                    strokeLinecap="round" strokeLinejoin="round"><path d="M8 20h32v20H8z M19 20V8h10v12 M21.5 13.5l2 2 3.5-4" /></svg>
+                </span>
+                <span className="text-[1rem] font-semibold tracking-wide">Sem Influenciar</span>
+                <span className="text-[.82rem] text-ink-3">informação com fonte, sem indicar candidato</span>
+              </div>
+              <h1 className="mt-3.5 text-[clamp(2.1rem,6.5vw,3.2rem)] font-bold leading-none tracking-tight">
+                Eleições <span className="text-s1">2026</span></h1>
+              <p className="mt-3.5 max-w-[62ch] text-ink-2">
                 Presidente, governador, senador e deputados em todos os estados: colinha com foto,
                 apuração oficial e ficha de cada candidatura com dados do TSE. Propostas, pesquisas e
                 histórico judicial com fonte para a Presidência e para Goiás.
