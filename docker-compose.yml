@@ -1,0 +1,15 @@
+# Deploy no Coolify (build pack "Docker Compose").
+# Não há "ports": quem publica o site é o proxy do Coolify. No painel, aponte o
+# domínio para o serviço "web" na porta 80.
+services:
+  web:
+    build: .
+    restart: unless-stopped
+    expose:
+      - "80"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s

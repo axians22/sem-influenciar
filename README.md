@@ -148,6 +148,24 @@ Para publicar, envie o conteúdo de `dist/` para qualquer hospedagem estática (
 Pages incluso; os caminhos são relativos). O build usa módulos ES, então precisa ser
 servido por HTTP — abrir `dist/index.html` direto do disco não funciona.
 
+## Deploy no Coolify (Docker Compose)
+
+O repositório traz `Dockerfile`, `docker-compose.yml` e `nginx.conf`. O build roda em
+Node 22 e a imagem final tem só o nginx servindo `dist/`.
+
+1. No Coolify, crie um recurso a partir deste repositório Git e escolha o build pack
+   **Docker Compose** (arquivo `docker-compose.yml`, na raiz).
+2. Em **Domains**, informe o domínio para o serviço `web`, na porta **80**
+   (por exemplo `https://seu-dominio.com.br:80`). O proxy do Coolify cuida do HTTPS.
+3. Faça o deploy. Não há variáveis de ambiente nem volumes.
+
+O compose não publica portas no host de propósito: quem expõe o site é o proxy do
+Coolify. Para testar a imagem fora dele:
+
+```bash
+docker build -t eleicoes-2026 . && docker run --rm -p 8080:80 eleicoes-2026
+```
+
 ## Estrutura
 
 ```

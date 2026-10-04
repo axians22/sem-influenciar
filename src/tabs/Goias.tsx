@@ -8,6 +8,7 @@ import { rotuloCargo, useUf, type Uf } from '../lib/uf';
 import { norm, titulo } from '../lib/format';
 import { ListaCandidatos } from '../components/Candidatos';
 import { FichaDeputado, useDeputados, type Deputado } from '../components/FichaDeputado';
+import { PesquisasEstado } from '../components/PesquisasEstado';
 import { Card, Kpi, KpiRow, Note, PageHead, Seg, Sources } from '../components/ui';
 import { Ranking, SerieCard } from './Pesquisas';
 
@@ -151,8 +152,9 @@ export default function Estado(){
           deputados estaduais.</>
           : <>Candidaturas a governador, senador e deputado em {uf.nome}, com os dados oficiais do
             TSE: perfil, candidaturas anteriores, financiamento e bens. Cada estado elege{' '}
-            <b className="text-ink-1">dois senadores</b> em 2026. Propostas, pesquisas e histórico
-            judicial só foram levantados para Goiás e para a Presidência.</>}
+            <b className="text-ink-1">dois senadores</b> em 2026. As pesquisas de governador e
+            Senado vêm do compilado da Wikipédia. Propostas e histórico judicial só foram levantados
+            para Goiás e para a Presidência.</>}
       </PageHead>
       <Seg label="Cargo" value={sub} onChange={setSub}
         options={CARGOS.map(c => ({ id: c, label: c === 'senador' ? 'Senado' : rotuloCargo(c, uf) }))} />
@@ -163,7 +165,10 @@ export default function Estado(){
           fontes={[{ t: 'Compilado de pesquisas de Goiás', u: m.P.fonte! }]} />
         <h3 className="mt-8 mb-3.5 text-[1.05rem] font-semibold">{m.lista}</h3>
         <ListaCandidatos key={sub + 'l'} dados={m.dados} cargoId={m.cargoId} />
-      </> : <ListaOficial key={uf.sigla + sub} cargo={sub} uf={uf} />}
+      </> : <>
+        {(sub === 'governador' || sub === 'senador') && <PesquisasEstado key={uf.sigla + sub + 'p'} uf={uf} so={sub} />}
+        <ListaOficial key={uf.sigla + sub} cargo={sub} uf={uf} />
+      </>}
     </>
   );
 }

@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { DATAFOLHA_FINAL as D, PESQ_PRESIDENTE as P, PESQ_VALIDOS, SEGUNDO_TURNO, TOP_PESQUISAS }
+import { DATAFOLHA_FINAL as D, PESQ_GOV_GOIAS, PESQ_PRESIDENTE as P, PESQ_SEN_GOIAS, PESQ_VALIDOS, SEGUNDO_TURNO, TOP_PESQUISAS }
   from '../data/pesquisas';
 import type { SeriePesquisas, TopCargo } from '../data/types';
 import { col, fmt, int } from '../lib/format';
+import { useUf } from '../lib/uf';
+import { PesquisasEstado } from '../components/PesquisasEstado';
 import { BarChart, PollChart } from '../components/Chart';
 import { Badge, Card, DataTable, Kpi, KpiRow, Legend, Meter, Note, PageHead, Seg, Sources, Tag, tip }
   from '../components/ui';
@@ -156,10 +158,12 @@ export function Ranking({ c, onPick }: { c: TopCargo; onPick?: (nr: string) => v
   );
 }
 
-type Sub = 'serie' | 'ultima' | 'turno2' | 'ranking';
+type Sub = 'serie' | 'ultima' | 'turno2' | 'estado' | 'ranking';
 
 export default function Pesquisas(){
   const [sub, setSub] = useState<Sub>('serie');
+  const { uf } = useUf();
+  const go = uf.sigla === 'go';
   const valido = (nome: string) => D.validos.find(x => x.nome.startsWith(nome))?.v;
   const lula = valido('Lula'), flavio = valido('Flávio');
 
@@ -181,7 +185,10 @@ export default function Pesquisas(){
 
       <Seg label="Seções de pesquisas" value={sub} onChange={setSub} options={[
         { id: 'serie', label: 'Evolução' }, { id: 'ultima', label: 'Última pesquisa' },
-        { id: 'turno2', label: '2º turno' }, { id: 'ranking', label: 'Ranking por cargo' }]} />
+        { id: 'turno2', label: '2º turno' }, { id: 'estado', label: uf.nome }, { id: 'ranking', label: 'Ranking por cargo' }]} />
+      {sub !== 'estado' && sub !== 'ranking' && (
+        <p className="-mt-2 mb-4 text-[.82rem] text-ink-3">Disputa presidencial, igual para todo o país. As pesquisas do seu estado estão em “{uf.nome}”.</p>
+      )}
 
       {sub === 'serie' && <>
         <SerieCard P={P} yMax={50} titulo="Presidente · 1º turno, votos totais"
@@ -226,13 +233,23 @@ export default function Pesquisas(){
 
       {sub === 'turno2' && <Duelos />}
 
+      {sub === 'estado' && (go ? <>
+        <SerieCard P={PESQ_GOV_GOIAS} yMax={50} titulo="Governo de Goiás · intenção de voto"
+          subtitulo={PESQ_GOV_GOIAS.unidade} fontes={[{ t: 'Compilado de pesquisas de Goiás', u: PESQ_GOV_GOIAS.fonte! }]} />
+        <SerieCard P={PESQ_SEN_GOIAS} yMax={50} titulo="Senado por Goiás · intenção de voto"
+          subtitulo={PESQ_SEN_GOIAS.unidade + ' ' + (PESQ_SEN_GOIAS.nota || '')} fontes={[{ t: 'Compilado de pesquisas de Goiás', u: PESQ_SEN_GOIAS.fonte! }]} />
+      </> : <PesquisasEstado key={uf.sigla} uf={uf} />)}
+
       {sub === 'ranking' && <>
         <p className="mb-4 max-w-[70ch] text-[.92rem] text-ink-2">
           Os primeiros colocados de cada cargo (cinco, ou dez para deputados) na pesquisa mais completa, com a margem de erro e os empates
           técnicos marcados. <b className="text-ink-1">Isto não é previsão de resultado</b> — pesquisa
           mede intenção de voto no momento da coleta.
         </p>
-        {TOP_PESQUISAS.cargos.map(c => <Ranking key={c.id} c={c} />)}
+        {/* os rankings de governador, Senado e deputados são de Goiás; em outro estado, ficam só
+            o de presidente e o compilado do estado */}
+        {TOP_PESQUISAS.cargos.filter(c => go || c.id === 'presidente').map(c => <Ranking key={c.id} c={c} />)}
+        {!go && <PesquisasEstado key={uf.sigla} uf={uf} />}
         <Note label="Como ler.">{TOP_PESQUISAS.aviso}</Note>
       </>}
     </>
