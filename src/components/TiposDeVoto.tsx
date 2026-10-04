@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { Badge, Sources } from './ui';
 
 const Tecla = ({ cor, children }: { cor: string; children: ReactNode }) => (
@@ -35,8 +35,16 @@ const MITOS = [
 
 /* Explica os tipos de voto antes de o eleitor montar a colinha. */
 export function TiposDeVoto(){
+  /* abre para o eleitor ver que existe e se recolhe sozinho em 3 segundos, a não ser
+     que ele toque no bloco antes */
+  const ref = useRef<HTMLDetailsElement>(null);
+  const timer = useRef(0);
+  useEffect(() => {
+    timer.current = window.setTimeout(() => { if (ref.current) ref.current.open = false; }, 3000);
+    return () => clearTimeout(timer.current);
+  }, []);
   return (
-    <details open className="group mb-4 rounded-xl border border-line bg-surface-1 px-4 sm:px-5">
+    <details open ref={ref} onPointerDown={() => clearTimeout(timer.current)} onKeyDown={() => clearTimeout(timer.current)} className="group mb-4 rounded-xl border border-line bg-surface-1 px-4 sm:px-5">
       <summary className="flex cursor-pointer list-none items-center justify-between gap-3 py-4">
         <span>
           <span className="block text-[1.05rem] font-semibold">Antes de escolher: os tipos de voto</span>

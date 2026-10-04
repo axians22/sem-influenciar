@@ -4,7 +4,7 @@ import type { CandUrna, CargoUrna } from '../data/types';
 import { buscaTse, type CargoTse, type TseCand } from '../lib/tse';
 import { norm, titulo } from '../lib/format';
 import { rotuloCargo, useUf, type Uf } from '../lib/uf';
-import { Note, PageHead, Tag } from '../components/ui';
+import { Note, PageHead } from '../components/ui';
 import { TiposDeVoto } from '../components/TiposDeVoto';
 
 const CHAVE = 'colinha2026';
@@ -104,8 +104,8 @@ function Retorno({ nr, conf }: { nr: string; conf: Conf }){
   return <span className="text-[.78rem] text-ink-3">não encontrado no registro do TSE</span>;
 }
 
-/* Busca com rosto, para cargos com muitos candidatos (deputados).
-   Sem escolha: campo de busca com lista de resultados (foto, número, nome, partido).
+/* Seletor com rosto, igual para todos os cargos.
+   Sem escolha: campo que abre a lista de candidatos (foto, número, nome, partido) e filtra ao digitar.
    Com escolha: cartão do candidato com botão para remover. */
 const MAX_RESULTADOS = 40;
 function CampoBusca({ cargo, nr, of, lista, onChange }:
@@ -146,6 +146,7 @@ function CampoBusca({ cargo, nr, of, lista, onChange }:
     const nome = conf.tipo === 'oficial' || conf.tipo === 'local' ? conf.nome
       : conf.tipo === 'ambiguo' ? conf.nomes.join(' ou ') : conf.tipo === 'fora' && conf.nome ? conf.nome : 'Número ' + nr;
     const ok = conf.tipo === 'oficial' || conf.tipo === 'local';
+    const alerta = lista.find(c => c.nr === nr)?.alerta;
     return (
       <div className="mt-2.5">
         <div className={'flex items-center gap-3 rounded-lg border-[1.5px] p-2 sm:max-w-[30rem] ' + (ok ? 'border-s1 bg-s1/10' : 'border-crit bg-crit/10')}>
@@ -162,6 +163,7 @@ function CampoBusca({ cargo, nr, of, lista, onChange }:
           </button>
         </div>
         <div className="mt-1.5"><Retorno nr={nr} conf={conf} /></div>
+        {alerta && <Note crit label="Atenção." className="mb-0">{alerta}. Um voto neste número pode ser anulado.</Note>}
       </div>
     );
   }
@@ -178,8 +180,10 @@ function CampoBusca({ cargo, nr, of, lista, onChange }:
           aria-label={'Buscar candidato a ' + cargo.rotulo}
           value={q} onChange={e => { setQ(e.target.value); setAberto(true); setAtivo(0); }}
           onFocus={() => setAberto(true)} onKeyDown={tecla} autoComplete="off"
-          placeholder={`Buscar entre ${opcoes.length} candidatos por nome, partido ou número`}
-          className="w-full rounded-lg border-[1.5px] border-line bg-surface-2 py-2.5 pr-3 pl-9 text-[.9rem] outline-none focus:border-s1" />
+          placeholder={`Escolher entre ${opcoes.length} candidatos`}
+          className="w-full rounded-lg border-[1.5px] border-line bg-surface-2 py-2.5 pr-9 pl-9 text-[.9rem] outline-none focus:border-s1" />
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
+          className={'pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-ink-3 transition-transform ' + (aberto ? 'rotate-180' : '')}><path d="m6 9 6 6 6-6" /></svg>
       </div>
       {aberto && (
         <ul id={id} role="listbox" aria-label={'Candidatos a ' + cargo.rotulo}
@@ -210,39 +214,6 @@ function CampoBusca({ cargo, nr, of, lista, onChange }:
         </ul>
       )}
     </div>
-  );
-}
-
-/* botões de seleção, para listas curtas */
-function Opcoes({ cargo, nr, of, lista, onChange }:
-  { cargo: CargoUrna; nr?: string; of: Oficial; lista: CandUrna[]; onChange: (nr: string) => void }){
-  const mapa = of[CARGO_TSE[cargo.id]];
-  const sel = nr ? lista.find(c => c.nr === nr) : null;
-  return (
-    <>
-      <div className="flex flex-wrap gap-2">
-        {lista.map(c => {
-          const fora = !!mapa && !mapa.has(c.nr);
-          return (
-            <label key={c.nr} className={'inline-flex cursor-pointer items-center gap-2 rounded-lg border-[1.5px] px-3 py-1.5 text-[.85rem] transition-colors '
-              + (nr === c.nr ? 'border-s1 bg-s1/10' : 'border-line bg-surface-2 hover:border-ink-3')}>
-              <input type="radio" name={'col-' + cargo.id} value={c.nr} checked={nr === c.nr}
-                onChange={() => onChange(c.nr)} className="accent-s1" />
-              <Foto src={mapa?.get(c.nr)?.foto} nome={c.urna} />
-              <b className="tabular-nums">{c.nr}</b>
-              <span>{c.urna} · {c.partido}</span>
-              {(c.alerta || fora) && <Tag title={c.alerta || FORA}>atenção</Tag>}
-            </label>
-          );
-        })}
-      </div>
-      {sel && (sel.alerta || (mapa && !mapa.has(sel.nr))) && (
-        <Note crit label="Atenção." className="mb-0">
-          {sel.alerta ? sel.alerta + '. Um voto neste número pode ser anulado.'
-            : 'O número ' + sel.nr + ' ' + FORA}
-        </Note>
-      )}
-    </>
   );
 }
 
@@ -374,9 +345,7 @@ function ColinhaUf({ uf }: { uf: Uf }){
                 </div>
                 {cargo.dica && <p className="mb-2.5 text-[.82rem] text-ink-2">{cargo.dica}</p>}
                 {!lista.length ? <p className="text-[.85rem] text-ink-3">Carregando candidatos do TSE…</p>
-                  : lista.length > 20
-                  ? <CampoBusca cargo={cargo} nr={esc[cargo.id]} of={of} lista={lista} onChange={nr => escolhe(cargo.id, nr)} />
-                  : <Opcoes cargo={cargo} nr={esc[cargo.id]} of={of} lista={lista} onChange={nr => escolhe(cargo.id, nr)} />}
+                  : <CampoBusca cargo={cargo} nr={esc[cargo.id]} of={of} lista={lista} onChange={nr => escolhe(cargo.id, nr)} />}
               </div>
             );
           })}
