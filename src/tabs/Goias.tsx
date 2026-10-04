@@ -1,11 +1,12 @@
 /* Aba do estado escolhido. Goiás tem conteúdo pesquisado à mão (pesquisas e fichas de
    governador e senador); os demais estados mostram só dados oficiais do TSE. */
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { GOV_GOIAS, SENADO_GOIAS } from '../data/candidatos';
 import { PESQ_GOV_GOIAS, PESQ_SEN_GOIAS, TOP_PESQUISAS } from '../data/pesquisas';
 import { useTse, type CargoTse } from '../lib/tse';
 import { rotuloCargo, useUf, type Uf } from '../lib/uf';
 import { norm, titulo } from '../lib/format';
+import { atuacaoBancada } from '../lib/camara';
 import { ListaCandidatos } from '../components/Candidatos';
 import { FichaDeputado, useDeputados, type Deputado } from '../components/FichaDeputado';
 import { PesquisasEstado } from '../components/PesquisasEstado';
@@ -35,12 +36,24 @@ function ListaOficial({ cargo, uf }: { cargo: Cargo; uf: Uf }){
   const [todos, setTodos] = useState(false);
   const [aberta, setAberta] = useState<Deputado | null>(null);
   const rotulo = rotuloCargo(cargo, uf);
+  /* filtro "já é deputado federal": número de projetos por nome civil, vindo da Câmara */
+  const [mandato, setMandato] = useState(false);
+  const [atuacao, setAtuacao] = useState<Map<string, number> | 'erro' | null>(null);
+  useEffect(() => { setMandato(false); setAtuacao(null); }, [uf.sigla, cargo]);
+  useEffect(() => {
+    if (!mandato || atuacao) return;
+    let vivo = true;
+    atuacaoBancada(uf.sigla).then(a => { if (vivo) setAtuacao(new Map(a.map(x => [norm(x.nomeCivil), x.projetos]))); },
+      () => { if (vivo) setAtuacao('erro'); });
+    return () => { vivo = false; };
+  }, [mandato, atuacao, uf.sigla]);
+  const projetos = atuacao instanceof Map ? atuacao : null;
 
   /* com a totalização do TSE em mãos, vale a lista dela: sem números repetidos nem
      candidaturas que saíram da disputa. Sem rede, cai no arquivo de fichas. */
   const lista = useMemo(() => (tse
-    ? tse.cands.map(x => ({ nr: x.n, sq: x.sq as string | null, urna: titulo(x.urna), partido: x.partido }))
-    : (arquivo?.lista || []).filter(x => x.naUrna).map(x => ({ nr: x.nr, sq: x.sq as string | null, urna: x.urna, partido: x.partido }))
+    ? tse.cands.map(x => ({ nr: x.n, sq: x.sq as string | null, urna: titulo(x.urna), partido: x.partido, nome: x.nome }))
+    : (arquivo?.lista || []).filter(x => x.naUrna).map(x => ({ nr: x.nr, sq: x.sq as string | null, urna: x.urna, partido: x.partido, nome: x.nome }))
   ).sort((a, b) => a.urna.localeCompare(b.urna, 'pt-BR')), [tse, arquivo]);
 
   const partidos = useMemo(() => {
@@ -51,10 +64,14 @@ function ListaOficial({ cargo, uf }: { cargo: Cargo; uf: Uf }){
 
   const filtrados = useMemo(() => {
     const nq = norm(q.trim());
-    return lista.filter(x => (!partido || x.partido === partido)
+    const f = lista.filter(x => (!partido || x.partido === partido)
       && (!nq || norm(x.urna + ' ' + x.partido + ' ' + x.nr).includes(nq)));
-  }, [lista, q, partido]);
-  const vis = todos || q || partido ? filtrados : filtrados.slice(0, LIMITE);
+    if (!mandato) return f;
+    if (!projetos) return [];
+    const n = (x: { nome: string }) => projetos.get(norm(x.nome));
+    return f.filter(x => n(x) != null).sort((a, b) => n(b)! - n(a)!);
+  }, [lista, q, partido, mandato, projetos]);
+  const vis = todos || q || partido || mandato ? filtrados : filtrados.slice(0, LIMITE);
 
   /* ficha pelo sequencial do TSE; sem ele, pelo número, preferindo quem está na urna */
   const abre = (x: { nr: string; sq: string | null }) => {
@@ -98,10 +115,29 @@ function ListaOficial({ cargo, uf }: { cargo: Cargo; uf: Uf }){
               <option value="">Todos os partidos</option>
               {partidos.map(([p, n]) => <option key={p} value={p}>{p} ({n})</option>)}
             </select>
+            {cargo === 'depfed' && (
+              <button type="button" aria-pressed={mandato} onClick={() => setMandato(m => !m)}
+                className={'rounded-full border-[1.5px] px-3.5 py-1.5 text-[.84rem] '
+                  + (mandato ? 'border-s1 bg-s1 font-semibold text-white' : 'border-line bg-surface-2 text-ink-2 hover:text-ink-1')}>
+                Já são deputados federais, por projetos apresentados
+              </button>
+            )}
             <span className="self-center text-[.8rem] text-ink-3">
-              {filtrados.length === lista.length ? '' : filtrados.length + ' de ' + lista.length}
+              {filtrados.length === lista.length || (mandato && !projetos) ? '' : filtrados.length + ' de ' + lista.length}
             </span>
           </div>
+        )}
+        {mandato && (
+          <Note className="mt-0">
+            {atuacao === 'erro' ? 'Não foi possível consultar a Câmara agora. Tente de novo em instantes.'
+              : !projetos ? 'Consultando a Câmara dos Deputados…'
+              : <>Candidatos que hoje são deputados federais {uf.em}, do que mais apresentou projetos para o que
+                menos apresentou. O número conta os projetos de lei (PL, PLP e PEC) que cada um assinou como
+                autor ou coautor desde fevereiro de 2023, segundo a <a href="https://dadosabertos.camara.leg.br"
+                target="_blank" rel="noopener">Câmara dos Deputados</a>. É uma contagem: não mede a qualidade
+                dos projetos, se foram aprovados, nem o que trouxeram para o estado. Quem nunca foi deputado
+                federal não aparece aqui, e isso não diz nada contra essas candidaturas.</>}
+          </Note>
         )}
         <div className="grid gap-x-6 sm:grid-cols-2 xl:grid-cols-3">
           {vis.map(x => (
@@ -111,11 +147,12 @@ function ListaOficial({ cargo, uf }: { cargo: Cargo; uf: Uf }){
               <b className="w-[52px] flex-none text-[.92rem] tabular-nums">{x.nr}</b>
               <span className="min-w-0 flex-1 text-[.9rem] text-s1 underline-offset-2 hover:underline">{x.urna}</span>
               <span className="flex-none text-[.78rem] text-ink-3">{x.partido}</span>
+              {mandato && projetos && <b className="w-[78px] flex-none text-right text-[.8rem] tabular-nums">{projetos.get(norm(x.nome))} projetos</b>}
             </button>
           ))}
         </div>
-        {!vis.length && <p className="py-6 text-center text-[.9rem] text-ink-2">Nenhuma candidatura encontrada.</p>}
-        {!q && !partido && filtrados.length > LIMITE && (
+        {!vis.length && !(mandato && !projetos) && <p className="py-6 text-center text-[.9rem] text-ink-2">Nenhuma candidatura encontrada.</p>}
+        {!q && !partido && !mandato && filtrados.length > LIMITE && (
           <button type="button" onClick={() => setTodos(t => !t)}
             className="mt-3 rounded-lg border border-line bg-surface-2 px-3.5 py-1.5 text-[.85rem]">
             {todos ? 'Mostrar só os ' + LIMITE + ' primeiros' : 'Mostrar todas as ' + filtrados.length + ' candidaturas'}

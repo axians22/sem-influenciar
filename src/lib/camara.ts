@@ -92,3 +92,19 @@ export const bancada = (uf: string) =>
 /* projetos de lei, de lei complementar e PECs de autoria do deputado, dos mais recentes */
 export const proposicoes = (id: number) =>
   get<Proposicao[]>(`/proposicoes?idDeputadoAutor=${id}&siglaTipo=PL&siglaTipo=PLP&siglaTipo=PEC&ordem=DESC&ordenarPor=id&itens=15`);
+
+/* Deputados federais em exercício do estado e quantos projetos (PL, PLP e PEC) cada um
+   assinou, como autor ou coautor, nesta legislatura. O nome civil serve para casar com
+   o registro de candidatura do TSE. É uma contagem: não mede qualidade nem resultado. */
+export interface Atuacao { id: number; nomeCivil: string; projetos: number }
+const LEGISLATURA = '2023-02-01';
+export async function atuacaoBancada(uf: string): Promise<Atuacao[]> {
+  const deps = await bancada(uf);
+  return Promise.all(deps.map(async d => {
+    const [det, prop] = await Promise.all([
+      get<{ nomeCivil: string }>(`/deputados/${d.id}`),
+      get<unknown[]>(`/proposicoes?idDeputadoAutor=${d.id}&siglaTipo=PL&siglaTipo=PLP&siglaTipo=PEC&dataApresentacaoInicio=${LEGISLATURA}&itens=1`),
+    ]);
+    return { id: d.id, nomeCivil: det.dados.nomeCivil, projetos: prop.total ?? 0 };
+  }));
+}
