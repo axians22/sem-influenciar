@@ -45,6 +45,10 @@ export default function App(){
   const [tab, setTab] = useHashTab<AbaId>(IDS, 'colinha');
   const { toggle } = useTheme();
   const { uf, setUf } = useUf();
+  /* seta piscando ao lado do seletor de estado nos primeiros 10 segundos, ou até a
+     pessoa escolher */
+  const [dica, setDica] = useState(true);
+  useEffect(() => { const id = setTimeout(() => setDica(false), 10_000); return () => clearTimeout(id); }, []);
   /* a aba do estado leva o nome do estado escolhido */
   const itens = ABAS.map(a => a.id === 'goias' ? { id: a.id, label: uf.nome } : { id: a.id, label: a.label });
   const Aba = ABAS.find(a => a.id === tab)!.C;
@@ -73,8 +77,13 @@ export default function App(){
             </div>
             <div className="flex items-center gap-2">
               <label className="flex items-center gap-2 text-[.85rem] text-ink-2">
-                <span>Seu estado</span>
-                <select value={uf.sigla} onChange={e => setUf(e.target.value)}
+                {dica && (
+                  <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth={3}
+                    strokeLinecap="round" strokeLinejoin="round"
+                    className="size-6 flex-none animate-[pisca_.9s_ease-in-out_infinite] text-s1 motion-reduce:animate-none"><path d="M3 12h17M13 5l7 7-7 7" /></svg>
+                )}
+                <span className={dica ? 'font-semibold text-ink-1' : ''}>{dica ? 'Escolha seu estado' : 'Seu estado'}</span>
+                <select value={uf.sigla} onChange={e => { setUf(e.target.value); setDica(false); }}
                   className="rounded-lg border-[1.5px] border-s1 bg-surface-2 px-2.5 py-1.5 text-[.9rem] font-semibold text-ink-1">
                   {UFS.map(u => <option key={u.sigla} value={u.sigla}>{u.nome}</option>)}
                 </select>

@@ -57,6 +57,9 @@
   h1,h2,h3{ line-height:1.2; }
 }
 
+/* seta que chama a atenção para o seletor de estado */
+@keyframes pisca{ 0%,100%{ opacity:1; transform:translateX(0); } 50%{ opacity:.15; transform:translateX(-5px); } }
+
 @media print{
   body{ background:#fff; color:#000; }
   @page{ margin:14mm; }
